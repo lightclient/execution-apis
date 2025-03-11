@@ -1,7 +1,7 @@
 import fs from "fs";
 import yaml from "js-yaml";
 import mergeAllOf from "json-schema-merge-allof";
-import { dereferenceDocument } from "@open-rpc/schema-utils-js";
+import { parseOpenRPCDocument } from "@open-rpc/schema-utils-js";
 
 function sortByMethodName(methods) {
   return methods.slice().sort((a, b) => {
@@ -55,7 +55,7 @@ methodFiles.forEach(file => {
 });
 
 let schemas = {};
-let schemasBase = "src/schemas/"
+let schemasBase = "src/components/schemas/"
 let schemaFiles = fs.readdirSync(schemasBase);
 schemaFiles.forEach(file => {
   console.log(file);
@@ -63,6 +63,19 @@ schemaFiles.forEach(file => {
   let parsed = yaml.load(raw);
   schemas = {
     ...schemas,
+    ...parsed,
+  };
+});
+
+let errors = {};
+let errorsBase = "src/components/errors/"
+let errorsFiles = fs.readdirSync(errorsBase);
+errorsFiles.forEach(file => {
+  console.log(file);
+  let raw = fs.readFileSync(errorsBase + file);
+  let parsed = yaml.load(raw);
+  errors = {
+    ...errors,
     ...parsed,
   };
 });
@@ -92,23 +105,31 @@ const doc = {
   },
   methods: sortByMethodName(methods),
   components: {
-    schemas: schemas
+    schemas: schemas,
+    errors: errors
   }
 }
 
 fs.writeFileSync('refs-openrpc.json', JSON.stringify(doc, null, '\t'));
 
-let spec = await dereferenceDocument(doc);
+let spec = await parseOpenRPCDocument(doc);
 
-spec.components = {};
+// spec.components = {};
 
 // Merge instances of `allOf` in methods.
-for (var i=0; i < spec.methods.length; i++) {
-  for (var j=0; j < spec.methods[i].params.length; j++) {
-    spec.methods[i].params[j].schema = mergeAllOf(spec.methods[i].params[j].schema);
-  }
-  spec.methods[i].result.schema = mergeAllOf(spec.methods[i].result.schema);
-}
+// for (var i = 0; i < spec.methods.length; i++) {
+//   for (var j = 0; j < spec.methods[i].params.length; j++) {
+//     spec.methods[i].params[j].schema = mergeAllOf(spec.methods[i].params[j].schema);
+//   }
+//   spec.methods[i].result.schema = mergeAllOf(spec.methods[i].result.schema);
+// }
+//
+// for (var i = 0; i < spec.components.schemas.length; i++) {
+//   for (var j = 0; j < spec.components.schemas[i].params.length; j++) {
+//     spec.components.schemas[i].params[j].schema = mergeAllOf(spec.methods[i].params[j].schema);
+//   }
+//   spec.methods[i].result.schema = mergeAllOf(spec.methods[i].result.schema);
+// }
 
 let data = JSON.stringify(spec, null, '\t');
 fs.writeFileSync('openrpc.json', data);

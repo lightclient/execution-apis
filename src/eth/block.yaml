@@ -16,6 +16,8 @@
       oneOf:
         - $ref: '#/components/schemas/notFound'
         - $ref: '#/components/schemas/Block'
+  errors:
+    - $ref: '#/components/errors/errorDataPruned'
   examples:
     - name: eth_getBlockByHash example
       params:
